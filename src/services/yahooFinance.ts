@@ -1,25 +1,7 @@
 import axios from 'axios';
 import { Symbol, Candle, ChartData, RSIData, Timeframe } from '../types/trading';
 
-// Mock data for development/demo purposes
-const MOCK_SYMBOLS: Record<string, Symbol> = {
-  'AAPL': { symbol: 'AAPL', name: 'Apple Inc.', price: 178.25, change: 2.15, changePercent: 1.22 },
-  'GOOGL': { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 142.87, change: -1.23, changePercent: -0.85 },
-  'MSFT': { symbol: 'MSFT', name: 'Microsoft Corp.', price: 378.90, change: 5.67, changePercent: 1.52 },
-  'TSLA': { symbol: 'TSLA', name: 'Tesla Inc.', price: 248.42, change: -8.90, changePercent: -3.46 },
-  'AMZN': { symbol: 'AMZN', name: 'Amazon.com Inc.', price: 155.73, change: 3.22, changePercent: 2.11 },
-  'NVDA': { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 875.28, change: 12.45, changePercent: 1.44 },
-  'META': { symbol: 'META', name: 'Meta Platforms Inc.', price: 485.67, change: -2.89, changePercent: -0.59 },
-  'BTC-USD': { symbol: 'BTC-USD', name: 'Bitcoin USD', price: 67250.00, change: 1250.75, changePercent: 1.89 },
-  'ETH-USD': { symbol: 'ETH-USD', name: 'Ethereum USD', price: 3425.80, change: -45.20, changePercent: -1.30 },
-  'SPY': { symbol: 'SPY', name: 'SPDR S&P 500 ETF', price: 542.18, change: 2.87, changePercent: 0.53 },
-  'RELIANCE.NS': { symbol: 'RELIANCE.NS', name: 'Reliance Industries Ltd.', price: 2456.75, change: 23.45, changePercent: 0.96 },
-  'TCS.NS': { symbol: 'TCS.NS', name: 'Tata Consultancy Services Ltd.', price: 3441.10, change: -12.30, changePercent: -0.36 },
-  'HDFCBANK.NS': { symbol: 'HDFCBANK.NS', name: 'HDFC Bank Ltd.', price: 1515.40, change: 8.75, changePercent: 0.58 },
-  'INFY.NS': { symbol: 'INFY.NS', name: 'Infosys Ltd.', price: 1789.25, change: -5.60, changePercent: -0.31 }
-};
-
-// Yahoo Finance API endpoints (for reference, but using mock data due to CORS)
+// Yahoo Finance API endpoints
 const YAHOO_FINANCE_BASE = 'https://query1.finance.yahoo.com/v8/finance/chart';
 const YAHOO_SEARCH_BASE = 'https://query2.finance.yahoo.com/v1/finance/search';
 
@@ -61,6 +43,24 @@ interface YahooSearchResponse {
     typeDisp: string;
   }>;
 }
+
+// Fallback mock data for when API fails
+const MOCK_SYMBOLS: Record<string, Symbol> = {
+  'AAPL': { symbol: 'AAPL', name: 'Apple Inc.', price: 178.25, change: 2.15, changePercent: 1.22 },
+  'GOOGL': { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 142.87, change: -1.23, changePercent: -0.85 },
+  'MSFT': { symbol: 'MSFT', name: 'Microsoft Corp.', price: 378.90, change: 5.67, changePercent: 1.52 },
+  'TSLA': { symbol: 'TSLA', name: 'Tesla Inc.', price: 248.42, change: -8.90, changePercent: -3.46 },
+  'AMZN': { symbol: 'AMZN', name: 'Amazon.com Inc.', price: 155.73, change: 3.22, changePercent: 2.11 },
+  'NVDA': { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 875.28, change: 12.45, changePercent: 1.44 },
+  'META': { symbol: 'META', name: 'Meta Platforms Inc.', price: 485.67, change: -2.89, changePercent: -0.59 },
+  'BTC-USD': { symbol: 'BTC-USD', name: 'Bitcoin USD', price: 67250.00, change: 1250.75, changePercent: 1.89 },
+  'ETH-USD': { symbol: 'ETH-USD', name: 'Ethereum USD', price: 3425.80, change: -45.20, changePercent: -1.30 },
+  'SPY': { symbol: 'SPY', name: 'SPDR S&P 500 ETF', price: 542.18, change: 2.87, changePercent: 0.53 },
+  'RELIANCE.NS': { symbol: 'RELIANCE.NS', name: 'Reliance Industries Ltd.', price: 2456.75, change: 23.45, changePercent: 0.96 },
+  'TCS.NS': { symbol: 'TCS.NS', name: 'Tata Consultancy Services Ltd.', price: 3441.10, change: -12.30, changePercent: -0.36 },
+  'HDFCBANK.NS': { symbol: 'HDFCBANK.NS', name: 'HDFC Bank Ltd.', price: 1515.40, change: 8.75, changePercent: 0.58 },
+  'INFY.NS': { symbol: 'INFY.NS', name: 'Infosys Ltd.', price: 1789.25, change: -5.60, changePercent: -0.31 }
+};
 
 // Convert timeframe to Yahoo Finance interval and determine if custom aggregation is needed
 function getYahooParams(timeframe: Timeframe): { interval: string; period: string; needsAggregation: boolean; aggregationFactor: number } {
@@ -351,9 +351,54 @@ function getTimeIntervalMs(timeframe: Timeframe): number {
 
 export async function fetchSymbolData(symbol: string): Promise<Symbol | null> {
   try {
-    // First check if we have mock data for this symbol
+    const formattedSymbol = formatSymbolForYahoo(symbol);
+    const url = `${CORS_PROXY}${encodeURIComponent(`${YAHOO_FINANCE_BASE}/${formattedSymbol}?interval=1d&range=5d`)}`;
+    
+    const response = await axios.get<YahooQuoteResponse>(url, { 
+      timeout: 10000,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const result = response.data.chart.result[0];
+    
+    if (!result) {
+      console.warn(`No data found for ${symbol}, using fallback`);
+      return MOCK_SYMBOLS[symbol] ? { ...MOCK_SYMBOLS[symbol] } : generateMockSymbolData(symbol);
+    }
+    
+    const meta = result.meta;
+    const currentPrice = meta.regularMarketPrice;
+    const previousClose = meta.previousClose;
+    
+    // Use Yahoo Finance's calculated change values if available, otherwise calculate manually
+    let change: number;
+    let changePercent: number;
+    
+    if (meta.regularMarketChange !== undefined && meta.regularMarketChangePercent !== undefined) {
+      // Use Yahoo Finance's pre-calculated values (more accurate)
+      change = meta.regularMarketChange;
+      changePercent = meta.regularMarketChangePercent;
+    } else {
+      // Fallback to manual calculation
+      change = currentPrice - previousClose;
+      changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0;
+    }
+    
+    return {
+      symbol: symbol.toUpperCase(),
+      name: symbol, // We'll get the full name from search if needed
+      price: currentPrice,
+      change: change,
+      changePercent: changePercent
+    };
+  } catch (error) {
+    console.warn(`Yahoo Finance API failed for ${symbol}, using fallback data:`, error);
+    
+    // Return mock data with some variation to simulate live updates
     if (MOCK_SYMBOLS[symbol]) {
-      // Add some random variation to make it look live
       const mockData = { ...MOCK_SYMBOLS[symbol] };
       const variation = (Math.random() - 0.5) * 0.02; // ±1% variation
       mockData.price = mockData.price * (1 + variation);
@@ -361,72 +406,31 @@ export async function fetchSymbolData(symbol: string): Promise<Symbol | null> {
       mockData.changePercent = (mockData.change / (mockData.price - mockData.change)) * 100;
       return mockData;
     }
-
-    // For unknown symbols, try to fetch from Yahoo Finance (may fail due to CORS)
-    try {
-      const formattedSymbol = formatSymbolForYahoo(symbol);
-      const url = `${CORS_PROXY}${encodeURIComponent(`${YAHOO_FINANCE_BASE}/${formattedSymbol}?interval=1d&range=5d`)}`;
-      
-      const response = await axios.get<YahooQuoteResponse>(url, { timeout: 5000 });
-      const result = response.data.chart.result[0];
-      
-      if (!result) {
-        // Fallback to mock data
-        return generateMockSymbolData(symbol);
-      }
-      
-      const meta = result.meta;
-      const currentPrice = meta.regularMarketPrice;
-      const previousClose = meta.previousClose;
-      
-      // Use Yahoo Finance's calculated change values if available, otherwise calculate manually
-      let change: number;
-      let changePercent: number;
-      
-      if (meta.regularMarketChange !== undefined && meta.regularMarketChangePercent !== undefined) {
-        // Use Yahoo Finance's pre-calculated values (more accurate)
-        change = meta.regularMarketChange;
-        changePercent = meta.regularMarketChangePercent;
-      } else {
-        // Fallback to manual calculation
-        change = currentPrice - previousClose;
-        changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0;
-      }
-      
-      return {
-        symbol: symbol.toUpperCase(),
-        name: symbol, // We'll get the full name from search if needed
-        price: currentPrice,
-        change: change,
-        changePercent: changePercent
-      };
-    } catch (apiError) {
-      console.warn(`Yahoo Finance API failed for ${symbol}, using mock data:`, apiError);
-      return generateMockSymbolData(symbol);
-    }
-  } catch (error) {
-    console.error(`Error fetching data for ${symbol}:`, error);
+    
     return generateMockSymbolData(symbol);
   }
 }
 
 export async function fetchChartData(symbol: string, timeframe: Timeframe): Promise<ChartData | null> {
   try {
-    // For demo purposes, always return mock data to avoid CORS issues
-    return generateMockChartData(symbol, timeframe);
-    
-    // The following code would be used with a proper backend proxy
-    /*
     const formattedSymbol = formatSymbolForYahoo(symbol);
     const { interval, period, needsAggregation, aggregationFactor } = getYahooParams(timeframe);
     
     const url = `${CORS_PROXY}${encodeURIComponent(`${YAHOO_FINANCE_BASE}/${formattedSymbol}?interval=${interval}&range=${period}`)}`;
     
-    const response = await axios.get<YahooQuoteResponse>(url);
+    const response = await axios.get<YahooQuoteResponse>(url, { 
+      timeout: 10000,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+    
     const result = response.data.chart.result[0];
     
     if (!result || !result.timestamp || !result.indicators.quote[0]) {
-      return null;
+      console.warn(`No chart data found for ${symbol}, using fallback`);
+      return generateMockChartData(symbol, timeframe);
     }
     
     const timestamps = result.timestamp;
@@ -455,60 +459,68 @@ export async function fetchChartData(symbol: string, timeframe: Timeframe): Prom
     const rsi = calculateRSIData(candles);
     
     return { candles, rsi };
-    */
   } catch (error) {
-    console.error(`Error fetching chart data for ${symbol}:`, error);
+    console.warn(`Yahoo Finance chart API failed for ${symbol}, using fallback data:`, error);
     return generateMockChartData(symbol, timeframe);
   }
 }
 
 export async function searchSymbols(query: string): Promise<Symbol[]> {
   try {
-    // First search in our mock data
+    // First search in our mock data for quick results
     const mockResults = Object.values(MOCK_SYMBOLS).filter(symbol =>
       symbol.symbol.toLowerCase().includes(query.toLowerCase()) ||
       symbol.name.toLowerCase().includes(query.toLowerCase())
     );
 
-    if (mockResults.length > 0) {
-      return mockResults.slice(0, 10);
-    }
-
     // Try direct symbol lookup with our enhanced formatting
     const formattedSymbol = formatSymbolForYahoo(query);
     const directResult = await fetchSymbolData(query);
     
-    if (directResult) {
-      return [directResult];
+    if (directResult && !mockResults.some(m => m.symbol === directResult.symbol)) {
+      mockResults.unshift(directResult);
     }
     
-    // For demo purposes, generate some mock search results
-    const mockSearchResults: Symbol[] = [
-      { symbol: query.toUpperCase(), name: `${query} Company`, price: 0, change: 0, changePercent: 0 },
-      { symbol: `${query}1`, name: `${query} Corp`, price: 0, change: 0, changePercent: 0 },
-      { symbol: `${query}2`, name: `${query} Ltd`, price: 0, change: 0, changePercent: 0 }
-    ];
+    if (mockResults.length > 0) {
+      return mockResults.slice(0, 10);
+    }
     
-    return mockSearchResults.slice(0, 5);
-    
-    // The following code would be used with a proper backend proxy
-    /*
-    const url = `${CORS_PROXY}${encodeURIComponent(`${YAHOO_SEARCH_BASE}?q=${encodeURIComponent(query)}`)}`;
-    
-    const response = await axios.get<YahooSearchResponse>(url);
-    const quotes = response.data.quotes || [];
-    
-    return quotes
-      .filter(quote => quote.typeDisp === 'Equity' || quote.typeDisp === 'ETF' || quote.typeDisp === 'Index')
-      .slice(0, 10) // Limit to 10 results
-      .map(quote => ({
-        symbol: quote.symbol,
-        name: quote.longname || quote.shortname || quote.symbol,
-        price: 0, // Price will be fetched separately
-        change: 0,
-        changePercent: 0
-      }));
-    */
+    // Try Yahoo Finance search API
+    try {
+      const url = `${CORS_PROXY}${encodeURIComponent(`${YAHOO_SEARCH_BASE}?q=${encodeURIComponent(query)}`)}`;
+      
+      const response = await axios.get<YahooSearchResponse>(url, { 
+        timeout: 5000,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const quotes = response.data.quotes || [];
+      
+      return quotes
+        .filter(quote => quote.typeDisp === 'Equity' || quote.typeDisp === 'ETF' || quote.typeDisp === 'Index')
+        .slice(0, 10) // Limit to 10 results
+        .map(quote => ({
+          symbol: quote.symbol,
+          name: quote.longname || quote.shortname || quote.symbol,
+          price: 0, // Price will be fetched separately
+          change: 0,
+          changePercent: 0
+        }));
+    } catch (searchError) {
+      console.warn('Yahoo Finance search API failed, using mock results:', searchError);
+      
+      // Generate some mock search results
+      const mockSearchResults: Symbol[] = [
+        { symbol: query.toUpperCase(), name: `${query} Company`, price: 0, change: 0, changePercent: 0 },
+        { symbol: `${query}1`, name: `${query} Corp`, price: 0, change: 0, changePercent: 0 },
+        { symbol: `${query}2`, name: `${query} Ltd`, price: 0, change: 0, changePercent: 0 }
+      ];
+      
+      return mockSearchResults.slice(0, 5);
+    }
   } catch (error) {
     console.error('Error searching symbols:', error);
     return [];
