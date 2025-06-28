@@ -343,7 +343,8 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
   };
 
   const renderSymbolItem = (symbol: Symbol, sectionId: string) => {
-    const changePercent = isNaN(symbol.changePercent) ? 0 : symbol.changePercent;
+    // Fix: Use the actual changePercent value instead of checking isNaN
+    const changePercent = symbol.changePercent || 0;
     const isFlashing = flashingSymbols.has(symbol.symbol);
     
     return (
@@ -366,7 +367,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
               <span className="font-bold text-xs text-gray-900">{formatPrice(symbol.price)}</span>
             </div>
             
-            {/* Change % */}
+            {/* Change % - Fixed to show actual value */}
             <div className="flex-shrink-0 text-right w-16">
               <span className={`text-xs font-medium ${
                 changePercent >= 0 ? 'text-green-600' : 'text-red-600'
