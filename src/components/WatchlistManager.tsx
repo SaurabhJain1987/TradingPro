@@ -31,6 +31,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [editSectionName, setEditSectionName] = useState('');
   const [flashingSymbols, setFlashingSymbols] = useState<Set<string>>(new Set());
+  const [addingSymbol, setAddingSymbol] = useState<string | null>(null);
 
   // Save active watchlist to localStorage when it changes
   useEffect(() => {
@@ -280,7 +281,14 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
     if (!activeWatchlist) return;
     
     const section = activeWatchlist.sections?.find(s => s.id === sectionId);
-    if (!section || section.symbols.includes(symbol)) return;
+    if (!section) return;
+    
+    // Check if symbol already exists in any section
+    const symbolExists = activeWatchlist.sections?.some(s => s.symbols.includes(symbol));
+    if (symbolExists) {
+      console.log(`Symbol ${symbol} already exists in watchlist`);
+      return;
+    }
     
     const totalSymbols = activeWatchlist.sections?.reduce((total, s) => total + s.symbols.length, 0) || 0;
     if (totalSymbols >= 250) {
@@ -288,25 +296,47 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
       return;
     }
 
-    const updatedWatchlists = watchlists.map(w => 
-      w.id === activeWatchlistId 
-        ? { 
-            ...w, 
-            sections: (w.sections || []).map(s => 
-              s.id === sectionId 
-                ? { ...s, symbols: [...s.symbols, symbol] }
-                : s
-            ),
-            updatedAt: Date.now() 
-          }
-        : w
-    );
-    onWatchlistsUpdate(updatedWatchlists);
-    
-    setShowSearch(false);
-    setShowPopular(false);
-    setSearchQuery('');
-    setSearchResults([]);
+    // Set loading state for this specific symbol
+    setAddingSymbol(symbol);
+
+    try {
+      // First, verify the symbol exists by fetching its data
+      const symbolData = await fetchSymbolData(symbol);
+      if (!symbolData) {
+        alert(`Unable to fetch data for symbol: ${symbol}. Please check the symbol and try again.`);
+        return;
+      }
+
+      // Add to watchlist
+      const updatedWatchlists = watchlists.map(w => 
+        w.id === activeWatchlistId 
+          ? { 
+              ...w, 
+              sections: (w.sections || []).map(s => 
+                s.id === sectionId 
+                  ? { ...s, symbols: [...s.symbols, symbol] }
+                  : s
+              ),
+              updatedAt: Date.now() 
+            }
+          : w
+      );
+      
+      onWatchlistsUpdate(updatedWatchlists);
+      
+      // Clear search and popular symbols
+      setShowSearch(false);
+      setShowPopular(false);
+      setSearchQuery('');
+      setSearchResults([]);
+      
+      console.log(`Successfully added ${symbol} to section ${section.name}`);
+    } catch (error) {
+      console.error(`Error adding symbol ${symbol}:`, error);
+      alert(`Failed to add symbol: ${symbol}. Please try again.`);
+    } finally {
+      setAddingSymbol(null);
+    }
   };
 
   const removeFromSection = (symbol: string, sectionId: string) => {
@@ -328,11 +358,11 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
     onWatchlistsUpdate(updatedWatchlists);
   };
 
-  const addPopularSymbol = (symbol: string) => {
+  const addPopularSymbol = async (symbol: string) => {
     if (!activeWatchlist || !activeWatchlist.sections || activeWatchlist.sections.length === 0) return;
     
     // Add to the first section by default
-    addToSection(symbol, activeWatchlist.sections[0].id);
+    await addToSection(symbol, activeWatchlist.sections[0].id);
   };
 
   const formatPrice = (price: number): string => {
@@ -600,9 +630,12 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
                     <button
                       key={symbol}
                       onClick={() => addPopularSymbol(symbol)}
-                      className="px-1 py-0.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-all duration-300 ease-out text-xs border border-blue-200"
+                      disabled={addingSymbol === symbol}
+                      className={`px-1 py-0.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-all duration-300 ease-out text-xs border border-blue-200 ${
+                        addingSymbol === symbol ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                     >
-                      {symbol}
+                      {addingSymbol === symbol ? '...' : symbol}
                     </button>
                   ))}
                 </div>
@@ -617,9 +650,12 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
                     <button
                       key={symbol}
                       onClick={() => addPopularSymbol(symbol)}
-                      className="px-1 py-0.5 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-all duration-300 ease-out text-xs border border-orange-200"
+                      disabled={addingSymbol === symbol}
+                      className={`px-1 py-0.5 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-all duration-300 ease-out text-xs border border-orange-200 ${
+                        addingSymbol === symbol ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                     >
-                      {symbol.replace('.NS', '')}
+                      {addingSymbol === symbol ? '...' : symbol.replace('.NS', '')}
                     </button>
                   ))}
                 </div>
@@ -634,9 +670,12 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
                     <button
                       key={symbol}
                       onClick={() => addPopularSymbol(symbol)}
-                      className="px-1 py-0.5 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 transition-all duration-300 ease-out text-xs border border-yellow-200"
+                      disabled={addingSymbol === symbol}
+                      className={`px-1 py-0.5 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 transition-all duration-300 ease-out text-xs border border-yellow-200 ${
+                        addingSymbol === symbol ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                     >
-                      {symbol.replace('-USD', '')}
+                      {addingSymbol === symbol ? '...' : symbol.replace('-USD', '')}
                     </button>
                   ))}
                 </div>
@@ -651,9 +690,12 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
                     <button
                       key={symbol}
                       onClick={() => addPopularSymbol(symbol)}
-                      className="px-1 py-0.5 bg-amber-100 text-amber-700 rounded hover:bg-amber-200 transition-all duration-300 ease-out text-xs border border-amber-200"
+                      disabled={addingSymbol === symbol}
+                      className={`px-1 py-0.5 bg-amber-100 text-amber-700 rounded hover:bg-amber-200 transition-all duration-300 ease-out text-xs border border-amber-200 ${
+                        addingSymbol === symbol ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                     >
-                      {symbol.replace('=F', '')}
+                      {addingSymbol === symbol ? '...' : symbol.replace('=F', '')}
                     </button>
                   ))}
                 </div>
@@ -668,9 +710,12 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
                     <button
                       key={symbol}
                       onClick={() => addPopularSymbol(symbol)}
-                      className="px-1 py-0.5 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-all duration-300 ease-out text-xs border border-purple-200"
+                      disabled={addingSymbol === symbol}
+                      className={`px-1 py-0.5 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-all duration-300 ease-out text-xs border border-purple-200 ${
+                        addingSymbol === symbol ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                     >
-                      {symbol.replace('^', '')}
+                      {addingSymbol === symbol ? '...' : symbol.replace('^', '')}
                     </button>
                   ))}
                 </div>
@@ -717,8 +762,11 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
                         }}
                         className="w-full text-xs border border-gray-300 rounded px-1 py-0.5 transition-all duration-300 ease-out"
                         defaultValue=""
+                        disabled={addingSymbol === symbol.symbol}
                       >
-                        <option value="">Add to section...</option>
+                        <option value="">
+                          {addingSymbol === symbol.symbol ? 'Adding...' : 'Add to section...'}
+                        </option>
                         {(activeWatchlist.sections || []).map(section => (
                           <option key={section.id} value={section.id}>
                             {section.name} ({section.symbols.length})
@@ -728,6 +776,22 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {searchQuery.length > 1 && searchResults.length === 0 && !searchLoading && (
+              <div className="absolute top-full left-0 right-0 bg-white border-2 border-gray-300 rounded shadow-lg mt-1 p-2 z-10">
+                <div className="text-center text-gray-600 text-xs">
+                  <div className="mb-1">No results found</div>
+                  <div className="text-xs">
+                    Try searching for:
+                    <div className="mt-1">
+                      <div>• US stocks: AAPL, GOOGL, MSFT</div>
+                      <div>• Indian stocks: RELIANCE.NS, TCS.NS</div>
+                      <div>• Crypto: BTC-USD, ETH-USD</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
