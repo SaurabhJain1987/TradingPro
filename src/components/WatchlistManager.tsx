@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, TrendingUp, TrendingDown, X, Globe, MapPin, Edit2, Trash2, FolderPlus, Save, MoreVertical, ChevronDown, ChevronRight, Star, StarOff, Folder, Bitcoin, BarChart3, Coins } from 'lucide-react';
 import { Symbol, Watchlist, WatchlistData, WatchlistSection } from '../types/trading';
-import { fetchSymbolData, searchSymbols, POPULAR_SYMBOLS } from '../services/alphaVantage';
+import { fetchSymbolData, searchSymbols, POPULAR_SYMBOLS } from '../services/finnhub';
 
 interface WatchlistManagerProps {
   selectedSymbol: string;
@@ -57,7 +57,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
           {
             id: 'indian-stocks',
             name: 'Indian Stocks',
-            symbols: ['RELIANCE', 'TCS'],
+            symbols: ['RELIANCE.NS', 'TCS.NS'],
             expanded: true,
             createdAt: Date.now()
           }
@@ -653,7 +653,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
                         addingSymbol === symbol ? 'opacity-50 cursor-not-allowed' : ''
                       }`}
                     >
-                      {addingSymbol === symbol ? '...' : symbol}
+                      {addingSymbol === symbol ? '...' : symbol.replace('.NS', '')}
                     </button>
                   ))}
                 </div>
@@ -909,7 +909,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
 
       <div className="p-2 border-t-2 border-gray-300 bg-gray-50">
         <div className="text-xs text-gray-600 text-center">
-          Auto-refresh: 1min • Alpha Vantage API
+          Auto-refresh: 1min • Finnhub API
         </div>
       </div>
     </div>

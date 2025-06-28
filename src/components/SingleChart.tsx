@@ -3,7 +3,7 @@ import { Chart } from './Chart';
 import { TimeframeSelector } from './TimeframeSelector';
 import { SymbolSearch } from './SymbolSearch';
 import { Timeframe, ChartData } from '../types/trading';
-import { fetchChartData, fetchSymbolData } from '../services/alphaVantage';
+import { fetchChartData, fetchSymbolData } from '../services/finnhub';
 import { RefreshCw, BarChart3, Grid3X3 } from 'lucide-react';
 
 interface SingleChartProps {
@@ -75,7 +75,7 @@ export function SingleChart({ symbol, viewMode, onViewModeChange, onSymbolChange
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-2" />
           <div className="text-gray-400">Loading chart data...</div>
-          <div className="text-xs text-gray-500 mt-1">Alpha Vantage API</div>
+          <div className="text-xs text-gray-500 mt-1">Finnhub API</div>
         </div>
       </div>
     );

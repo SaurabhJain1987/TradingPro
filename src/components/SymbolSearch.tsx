@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, Globe, MapPin, Bitcoin, Coins, BarChart3 } from 'lucide-react';
-import { searchSymbols, POPULAR_SYMBOLS } from '../services/alphaVantage';
+import { searchSymbols, POPULAR_SYMBOLS } from '../services/finnhub';
 import { Symbol } from '../types/trading';
 
 interface SymbolSearchProps {
@@ -172,7 +172,7 @@ export function SymbolSearch({ onSymbolSelect, onClose }: SymbolSearchProps) {
                         onClick={() => handleSymbolClick(symbol)}
                         className="p-3 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors font-medium"
                       >
-                        {symbol}
+                        {symbol.replace('.NS', '')}
                       </button>
                     ))}
                   </div>
