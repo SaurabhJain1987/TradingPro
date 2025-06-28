@@ -170,12 +170,19 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
     const marginRight = 20;
     const chartWidth = rect.width - marginLeft - marginRight;
     
-    // Minimum candle width (including spacing) to prevent merging
-    const minCandleSpacing = 3; // Minimum 3 pixels between candle centers
-    const maxCandlesForWidth = Math.floor(chartWidth / minCandleSpacing);
+    // Enhanced candle spacing calculation
+    const minCandleWidth = 2; // Minimum candle body width
+    const minGapWidth = 1; // Minimum gap between candles
+    const minTotalWidth = minCandleWidth + minGapWidth; // Minimum space per candle
     
-    // Calculate max candles based on zoom level, but respect minimum spacing
-    const zoomBasedMaxCandles = Math.floor(300 / zoomLevel);
+    // Calculate maximum candles that can fit with proper spacing
+    const maxCandlesForWidth = Math.floor(chartWidth / minTotalWidth);
+    
+    // Calculate zoom-based max candles with better scaling
+    const baseMaxCandles = 150; // Base number of candles at zoom level 1
+    const zoomBasedMaxCandles = Math.floor(baseMaxCandles / Math.pow(zoomLevel, 0.8));
+    
+    // Use the more restrictive limit
     const maxCandles = Math.min(maxCandlesForWidth, zoomBasedMaxCandles, 1000);
     
     // Position current time around 70% from the left (showing more historical data)
@@ -741,29 +748,48 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
       ctx.fillText(timeLabel, x, marginTop + chartHeight + 8);
     }
     
-    // Calculate candle dimensions with improved spacing logic
+    // Enhanced candle dimensions calculation with guaranteed separation
     const totalCandleSpace = chartWidth / displayCandles.length;
     
-    // Ensure minimum spacing between candles
+    // Define minimum and maximum dimensions
     const minCandleWidth = 1;
-    const maxCandleWidth = 12;
-    const minSpacing = 1; // Minimum 1 pixel gap between candles
+    const maxCandleWidth = 16;
+    const minGapWidth = 1; // Guaranteed minimum gap between candles
+    const maxGapWidth = 8; // Maximum gap for better visual balance
     
     // Calculate optimal candle width based on available space
-    let candleWidth = Math.max(minCandleWidth, Math.min(maxCandleWidth, totalCandleSpace * 0.7));
+    let candleWidth: number;
+    let gapWidth: number;
     
-    // If candles would be too close, reduce width further
-    if (totalCandleSpace < 4) {
-      candleWidth = Math.max(minCandleWidth, totalCandleSpace - minSpacing);
+    if (totalCandleSpace <= minCandleWidth + minGapWidth) {
+      // Very tight spacing - use minimum values
+      candleWidth = minCandleWidth;
+      gapWidth = Math.max(0.5, totalCandleSpace - candleWidth);
+    } else if (totalCandleSpace >= maxCandleWidth + maxGapWidth) {
+      // Plenty of space - use maximum candle width with balanced gap
+      candleWidth = maxCandleWidth;
+      gapWidth = Math.min(maxGapWidth, totalCandleSpace - candleWidth);
+    } else {
+      // Calculate proportional sizing
+      const availableSpace = totalCandleSpace - minGapWidth;
+      candleWidth = Math.max(minCandleWidth, Math.min(maxCandleWidth, availableSpace * 0.75));
+      gapWidth = totalCandleSpace - candleWidth;
     }
     
+    // Ensure gap is never less than minimum
+    gapWidth = Math.max(minGapWidth, gapWidth);
+    
+    // Recalculate candle width if gap adjustment affected it
+    candleWidth = Math.max(minCandleWidth, totalCandleSpace - gapWidth);
+    
+    // Calculate spacing between candle centers
     const candleSpacing = chartWidth / (displayCandles.length - 1);
     
-    // Draw candles (only for real data)
+    // Draw candles (only for real data) with guaranteed separation
     displayCandles.forEach((candle, index) => {
       if (candle.close === 0) return; // Skip future blank periods
       
-      const x = marginLeft + index * candleSpacing;
+      const centerX = marginLeft + index * candleSpacing;
       
       // Calculate Y positions using logarithmic scale
       const openY = marginTop + ((adjustedLogMax - Math.log(candle.open)) / adjustedLogRange) * chartHeight;
@@ -772,28 +798,31 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
       const lowY = marginTop + ((adjustedLogMax - Math.log(candle.low)) / adjustedLogRange) * chartHeight;
       
       const isGreen = candle.close >= candle.open;
-      // Made green candles one shade darker
-      const color = isGreen ? '#15803d' : '#ef4444'; // Changed from '#16a34a' to '#15803d' (darker green)
+      const color = isGreen ? '#15803d' : '#ef4444';
       
-      // Draw wick with sharper lines
+      // Draw wick with sharp lines
       ctx.strokeStyle = color;
-      ctx.lineWidth = 1;
-      ctx.lineCap = 'butt'; // Sharp line caps
+      ctx.lineWidth = Math.max(1, Math.min(2, candleWidth * 0.2)); // Wick width scales with candle width
+      ctx.lineCap = 'butt';
       ctx.beginPath();
-      ctx.moveTo(Math.round(x), Math.round(highY));
-      ctx.lineTo(Math.round(x), Math.round(lowY));
+      ctx.moveTo(Math.round(centerX), Math.round(highY));
+      ctx.lineTo(Math.round(centerX), Math.round(lowY));
       ctx.stroke();
       
-      // Draw candle body with sharp edges
+      // Draw candle body with guaranteed width and sharp edges
       const bodyTop = Math.min(openY, closeY);
       const bodyHeight = Math.max(1, Math.abs(closeY - openY));
       
+      // Calculate candle body position ensuring it's centered and has proper width
+      const candleLeft = centerX - (candleWidth / 2);
+      
       // Use integer pixel positions for sharp edges
-      const sharpX = Math.round(x - candleWidth / 2);
+      const sharpX = Math.round(candleLeft);
       const sharpY = Math.round(bodyTop);
       const sharpWidth = Math.round(candleWidth);
       const sharpHeight = Math.round(bodyHeight);
       
+      // Fill candle body
       ctx.fillStyle = color;
       ctx.fillRect(sharpX, sharpY, sharpWidth, sharpHeight);
       
@@ -801,7 +830,7 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
       ctx.strokeStyle = color;
       ctx.lineWidth = 1;
       ctx.lineCap = 'butt';
-      ctx.lineJoin = 'miter'; // Sharp corners
+      ctx.lineJoin = 'miter';
       ctx.strokeRect(sharpX, sharpY, sharpWidth, sharpHeight);
     });
     
@@ -1127,7 +1156,7 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
               <span>Bollinger Bands</span>
             </div>
             <div className="text-xs text-gray-500">
-              Zoom: {zoomLevel.toFixed(1)}x | Pan: Two-finger drag
+              Zoom: {zoomLevel.toFixed(1)}x | Candles: {displayCandles.length}
             </div>
           </div>
         </div>
