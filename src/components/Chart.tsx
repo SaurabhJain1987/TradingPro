@@ -171,8 +171,8 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
     const chartWidth = rect.width - marginLeft - marginRight;
     
     // Enhanced contraction settings - allow much more aggressive compression
-    const minCandleWidth = 0.5; // Reduced minimum candle width for extreme contraction
-    const minGapWidth = 0.5; // Reduced minimum gap for extreme contraction
+    const minCandleWidth = 0.3; // Ultra-thin minimum for extreme contraction
+    const minGapWidth = 0.3; // Minimum gap for extreme contraction
     const preferredGapWidth = 1; // Reduced preferred gap
     const minTotalWidth = minCandleWidth + minGapWidth; // Minimum space per candle
     
@@ -749,21 +749,21 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
       ctx.fillText(timeLabel, x, marginTop + chartHeight + 8);
     }
     
-    // Enhanced candle dimensions calculation with extreme contraction support
+    // Enhanced candle dimensions calculation with thinner candles and more visible gaps
     const totalCandleSpace = chartWidth / displayCandles.length;
     
-    // Extreme contraction settings for maximum data visibility
-    const minCandleWidth = 0.3; // Ultra-thin minimum for extreme contraction
-    const maxCandleWidth = 18; // Maximum for zoomed-in view
-    const minGapWidth = 0.2; // Ultra-thin gap for extreme contraction
-    const preferredGapWidth = 1; // Preferred gap for normal view
-    const maxGapWidth = 8; // Maximum gap to prevent excessive spacing
+    // New settings for thinner candles with more visible gaps
+    const minCandleWidth = 0.2; // Even thinner minimum for extreme contraction
+    const maxCandleWidth = 8; // Reduced maximum width for thinner candles
+    const minGapWidth = 0.4; // Increased minimum gap for better visibility
+    const preferredGapWidth = 2; // Increased preferred gap for better separation
+    const maxGapWidth = 6; // Reduced maximum gap to balance with thinner candles
     
     let candleWidth: number;
     let gapWidth: number;
     
     if (totalCandleSpace <= minCandleWidth + minGapWidth) {
-      // Extreme contraction - prioritize visibility over aesthetics
+      // Extreme contraction - prioritize gap visibility
       gapWidth = minGapWidth;
       candleWidth = Math.max(minCandleWidth, totalCandleSpace - gapWidth);
     } else if (totalCandleSpace >= maxCandleWidth + maxGapWidth) {
@@ -771,17 +771,17 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
       candleWidth = maxCandleWidth;
       gapWidth = Math.min(maxGapWidth, totalCandleSpace - candleWidth);
     } else {
-      // Calculate proportional sizing
+      // Calculate proportional sizing with emphasis on gap visibility
       const availableSpace = totalCandleSpace - minGapWidth;
       
-      // Adjust ratio based on contraction level for better visibility
-      const contractionLevel = Math.min(1, totalCandleSpace / 4); // 0 = extreme contraction, 1 = normal
-      const candleRatio = 0.5 + (contractionLevel * 0.3); // 0.5 to 0.8 range
+      // Adjust ratio to favor gaps over candle width for better visibility
+      const contractionLevel = Math.min(1, totalCandleSpace / 6); // 0 = extreme contraction, 1 = normal
+      const candleRatio = 0.3 + (contractionLevel * 0.4); // 0.3 to 0.7 range (favoring gaps)
       
       candleWidth = Math.max(minCandleWidth, Math.min(maxCandleWidth, availableSpace * candleRatio));
       gapWidth = totalCandleSpace - candleWidth;
       
-      // Ensure minimum gap
+      // Ensure minimum gap is always maintained
       if (gapWidth < minGapWidth) {
         gapWidth = minGapWidth;
         candleWidth = Math.max(minCandleWidth, totalCandleSpace - gapWidth);
@@ -791,7 +791,7 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
     // Calculate spacing between candle centers
     const candleSpacing = chartWidth / (displayCandles.length - 1);
     
-    // Draw candles (only for real data) with extreme contraction support
+    // Draw candles (only for real data) with thinner design and better gap visibility
     displayCandles.forEach((candle, index) => {
       if (candle.close === 0) return; // Skip future blank periods
       
@@ -808,16 +808,16 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
       
       // Draw wick with adaptive width for extreme contraction
       ctx.strokeStyle = color;
-      ctx.lineWidth = Math.max(0.3, Math.min(2, candleWidth * 0.2)); // Adaptive wick width
+      ctx.lineWidth = Math.max(0.2, Math.min(1.5, candleWidth * 0.3)); // Thinner adaptive wick width
       ctx.lineCap = 'butt';
       ctx.beginPath();
       ctx.moveTo(Math.round(centerX), Math.round(highY));
       ctx.lineTo(Math.round(centerX), Math.round(lowY));
       ctx.stroke();
       
-      // Draw candle body with extreme contraction support
+      // Draw candle body with thinner design
       const bodyTop = Math.min(openY, closeY);
-      const bodyHeight = Math.max(0.5, Math.abs(closeY - openY)); // Minimum height for visibility
+      const bodyHeight = Math.max(0.4, Math.abs(closeY - openY)); // Slightly increased minimum height for visibility
       
       // Calculate candle body position
       const candleLeft = centerX - (candleWidth / 2);
@@ -832,10 +832,10 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
       ctx.fillStyle = color;
       ctx.fillRect(sharpX, sharpY, sharpWidth, sharpHeight);
       
-      // Add border only if candle is wide enough
-      if (candleWidth > 1) {
+      // Add border only if candle is wide enough (reduced threshold)
+      if (candleWidth > 0.5) {
         ctx.strokeStyle = color;
-        ctx.lineWidth = 0.5;
+        ctx.lineWidth = 0.3; // Thinner border
         ctx.lineCap = 'butt';
         ctx.lineJoin = 'miter';
         ctx.strokeRect(sharpX, sharpY, sharpWidth, sharpHeight);
