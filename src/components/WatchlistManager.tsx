@@ -428,7 +428,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
   const regularWatchlists = watchlists.filter(w => !w.isFavorite);
 
   return (
-    <div className="bg-white border-l-2 border-gray-300 w-72 flex flex-col flex-shrink-0">
+    <div className="bg-white border-l-2 border-gray-300 w-72 flex flex-col flex-shrink-0 relative">
       {/* Compact Watchlist Header */}
       <div className="p-3 border-b-2 border-gray-300 bg-gray-50">
         <div className="flex items-center justify-between mb-2">
@@ -524,9 +524,9 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
           </div>
         )}
 
-        {/* Watchlist Menu */}
+        {/* Watchlist Menu - Fixed z-index */}
         {showWatchlistMenu === activeWatchlist?.id && (
-          <div className="absolute top-20 right-4 bg-white border-2 border-gray-300 rounded-lg shadow-lg z-20 min-w-32">
+          <div className="absolute top-20 right-4 bg-white border-2 border-gray-300 rounded-lg shadow-lg z-50 min-w-32">
             <button
               onClick={() => {
                 setEditingWatchlist(activeWatchlist.id);
@@ -724,7 +724,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
           </div>
         )}
 
-        {/* Compact Search */}
+        {/* Compact Search - Fixed z-index */}
         {showSearch && (
           <div className="mt-2 relative">
             <div className="relative">
@@ -740,13 +740,13 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
             </div>
             
             {searchLoading && (
-              <div className="absolute top-full left-0 right-0 bg-white border-2 border-gray-300 rounded shadow-lg mt-1 p-2 z-10">
+              <div className="absolute top-full left-0 right-0 bg-white border-2 border-gray-300 rounded shadow-lg mt-1 p-2 z-50">
                 <div className="text-center text-gray-600 text-xs">Searching...</div>
               </div>
             )}
             
             {searchResults.length > 0 && !searchLoading && activeWatchlist && (
-              <div className="absolute top-full left-0 right-0 bg-white border-2 border-gray-300 rounded shadow-lg mt-1 max-h-32 overflow-y-auto z-10">
+              <div className="absolute top-full left-0 right-0 bg-white border-2 border-gray-300 rounded shadow-lg mt-1 max-h-32 overflow-y-auto z-50">
                 {searchResults.map((symbol) => (
                   <div key={symbol.symbol} className="border-b border-gray-100 last:border-b-0">
                     <div className="px-2 py-1 text-xs">
@@ -780,7 +780,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
             )}
 
             {searchQuery.length > 1 && searchResults.length === 0 && !searchLoading && (
-              <div className="absolute top-full left-0 right-0 bg-white border-2 border-gray-300 rounded shadow-lg mt-1 p-2 z-10">
+              <div className="absolute top-full left-0 right-0 bg-white border-2 border-gray-300 rounded shadow-lg mt-1 p-2 z-50">
                 <div className="text-center text-gray-600 text-xs">
                   <div className="mb-1">No results found</div>
                   <div className="text-xs">
