@@ -335,6 +335,13 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
     addToSection(symbol, activeWatchlist.sections[0].id);
   };
 
+  const formatPrice = (price: number): string => {
+    if (price >= 1000) {
+      return price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    return price.toFixed(2);
+  };
+
   const renderSymbolItem = (symbol: Symbol, sectionId: string) => {
     const changePercent = isNaN(symbol.changePercent) ? 0 : symbol.changePercent;
     const isFlashing = flashingSymbols.has(symbol.symbol);
@@ -342,15 +349,34 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
     return (
       <div
         key={symbol.symbol}
-        className={`group p-2 border-b border-gray-200 cursor-pointer transition-all duration-700 ease-out ${
-          selectedSymbol === symbol.symbol ? 'bg-blue-50 border-l-4 border-l-blue-500' : 'hover:bg-gray-100'
+        className={`group px-2 py-1.5 border-b border-gray-200 cursor-pointer transition-all duration-700 ease-out hover:bg-gray-50 ${
+          selectedSymbol === symbol.symbol ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
         } ${isFlashing ? 'bg-yellow-100 animate-pulse' : ''}`}
         onClick={() => onSymbolSelect(symbol.symbol)}
       >
         <div className="flex items-center justify-between">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-semibold text-gray-900 text-sm truncate">{symbol.symbol}</span>
+          <div className="flex-1 min-w-0 flex items-center justify-between">
+            {/* Symbol */}
+            <div className="flex-shrink-0 w-16">
+              <span className="font-semibold text-gray-900 text-xs truncate block">{symbol.symbol}</span>
+            </div>
+            
+            {/* Price */}
+            <div className="flex-shrink-0 text-right w-20">
+              <span className="font-bold text-xs text-gray-900">{formatPrice(symbol.price)}</span>
+            </div>
+            
+            {/* Change % */}
+            <div className="flex-shrink-0 text-right w-16">
+              <span className={`text-xs font-medium ${
+                changePercent >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {changePercent >= 0 ? '+' : ''}{changePercent.toFixed(2)}%
+              </span>
+            </div>
+            
+            {/* Remove button */}
+            <div className="flex-shrink-0 w-6 flex justify-end">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -360,14 +386,6 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
               >
                 <X className="w-2 h-2 text-gray-600" />
               </button>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-sm text-gray-900">${symbol.price.toFixed(2)}</span>
-              <div className={`text-xs font-medium transition-colors duration-400 ease-out ${
-                changePercent >= 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {changePercent >= 0 ? '+' : ''}{changePercent.toFixed(2)}%
-              </div>
             </div>
           </div>
         </div>
@@ -722,7 +740,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
         )}
       </div>
 
-      {/* Watchlist Content with Sections */}
+      {/* Watchlist Content with Sections - Compact Header */}
       <div className="flex-1 overflow-y-auto bg-gray-50">
         {loading && (!activeWatchlistData || activeWatchlistData.symbolData.length === 0) ? (
           <div className="p-3 text-center text-gray-600 text-xs">Loading...</div>
@@ -732,85 +750,97 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
             <div className="text-xs">Create a section to add symbols</div>
           </div>
         ) : (
-          activeWatchlist.sections.map((section) => {
-            const sectionSymbols = activeWatchlistData?.symbolData.filter(symbol => 
-              section.symbols.includes(symbol.symbol)
-            ) || [];
+          <>
+            {/* Compact Header Row */}
+            <div className="bg-gray-200 px-2 py-1 border-b border-gray-300 sticky top-0 z-10">
+              <div className="flex items-center justify-between text-xs font-medium text-gray-700">
+                <div className="w-16">Symbol</div>
+                <div className="w-20 text-right">Last</div>
+                <div className="w-16 text-right">Chg%</div>
+                <div className="w-6"></div>
+              </div>
+            </div>
+            
+            {activeWatchlist.sections.map((section) => {
+              const sectionSymbols = activeWatchlistData?.symbolData.filter(symbol => 
+                section.symbols.includes(symbol.symbol)
+              ) || [];
 
-            return (
-              <div key={section.id} className="border-b border-gray-200">
-                <div className="bg-gray-100 hover:bg-gray-200 flex items-center justify-between text-left border-b border-gray-200 px-2 py-1 transition-colors duration-400 ease-out">
-                  <button
-                    onClick={() => toggleSection(activeWatchlist.id, section.id)}
-                    className="flex items-center space-x-1 flex-1"
-                  >
-                    <span className="text-xs font-medium text-gray-700">{section.name}</span>
-                    <span className="text-xs text-gray-500">({sectionSymbols.length})</span>
-                    {section.expanded ? (
-                      <ChevronDown className="w-3 h-3 text-gray-500 transition-transform duration-300 ease-out" />
-                    ) : (
-                      <ChevronRight className="w-3 h-3 text-gray-500 transition-transform duration-300 ease-out" />
-                    )}
-                  </button>
-                  
-                  <div className="flex items-center space-x-1">
+              return (
+                <div key={section.id} className="border-b border-gray-200">
+                  <div className="bg-gray-100 hover:bg-gray-200 flex items-center justify-between text-left border-b border-gray-200 px-2 py-1 transition-colors duration-400 ease-out">
                     <button
-                      onClick={() => {
-                        setEditingSection(section.id);
-                        setEditSectionName(section.name);
-                      }}
-                      className="p-0.5 hover:bg-gray-300 rounded transition-colors duration-300 ease-out"
-                      title="Edit section"
+                      onClick={() => toggleSection(activeWatchlist.id, section.id)}
+                      className="flex items-center space-x-1 flex-1"
                     >
-                      <Edit2 className="w-2 h-2 text-gray-600" />
+                      <span className="text-xs font-medium text-gray-700">{section.name}</span>
+                      <span className="text-xs text-gray-500">({sectionSymbols.length})</span>
+                      {section.expanded ? (
+                        <ChevronDown className="w-3 h-3 text-gray-500 transition-transform duration-300 ease-out" />
+                      ) : (
+                        <ChevronRight className="w-3 h-3 text-gray-500 transition-transform duration-300 ease-out" />
+                      )}
                     </button>
-                    {activeWatchlist.sections && activeWatchlist.sections.length > 1 && (
+                    
+                    <div className="flex items-center space-x-1">
                       <button
-                        onClick={() => deleteSection(activeWatchlist.id, section.id)}
+                        onClick={() => {
+                          setEditingSection(section.id);
+                          setEditSectionName(section.name);
+                        }}
                         className="p-0.5 hover:bg-gray-300 rounded transition-colors duration-300 ease-out"
-                        title="Delete section"
+                        title="Edit section"
                       >
-                        <Trash2 className="w-2 h-2 text-red-600" />
+                        <Edit2 className="w-2 h-2 text-gray-600" />
                       </button>
-                    )}
-                  </div>
-                </div>
-                
-                {editingSection === section.id && (
-                  <div className="p-2 bg-white border-b border-gray-200">
-                    <div className="flex space-x-1">
-                      <input
-                        type="text"
-                        value={editSectionName}
-                        onChange={(e) => setEditSectionName(e.target.value)}
-                        className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-400 ease-out"
-                        maxLength={20}
-                        onKeyPress={(e) => e.key === 'Enter' && updateSectionName(activeWatchlist.id, section.id, editSectionName)}
-                      />
-                      <button onClick={() => updateSectionName(activeWatchlist.id, section.id, editSectionName)} className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors duration-300 ease-out">
-                        <Save className="w-3 h-3" />
-                      </button>
-                      <button onClick={() => { setEditingSection(null); setEditSectionName(''); }} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded hover:bg-gray-200 transition-colors duration-300 ease-out">
-                        <X className="w-3 h-3" />
-                      </button>
+                      {activeWatchlist.sections && activeWatchlist.sections.length > 1 && (
+                        <button
+                          onClick={() => deleteSection(activeWatchlist.id, section.id)}
+                          className="p-0.5 hover:bg-gray-300 rounded transition-colors duration-300 ease-out"
+                          title="Delete section"
+                        >
+                          <Trash2 className="w-2 h-2 text-red-600" />
+                        </button>
+                      )}
                     </div>
                   </div>
-                )}
-                
-                {section.expanded && (
-                  <div>
-                    {sectionSymbols.length === 0 ? (
-                      <div className="p-2 text-center text-gray-500 text-xs">
-                        No symbols in this section
+                  
+                  {editingSection === section.id && (
+                    <div className="p-2 bg-white border-b border-gray-200">
+                      <div className="flex space-x-1">
+                        <input
+                          type="text"
+                          value={editSectionName}
+                          onChange={(e) => setEditSectionName(e.target.value)}
+                          className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-400 ease-out"
+                          maxLength={20}
+                          onKeyPress={(e) => e.key === 'Enter' && updateSectionName(activeWatchlist.id, section.id, editSectionName)}
+                        />
+                        <button onClick={() => updateSectionName(activeWatchlist.id, section.id, editSectionName)} className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors duration-300 ease-out">
+                          <Save className="w-3 h-3" />
+                        </button>
+                        <button onClick={() => { setEditingSection(null); setEditSectionName(''); }} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded hover:bg-gray-200 transition-colors duration-300 ease-out">
+                          <X className="w-3 h-3" />
+                        </button>
                       </div>
-                    ) : (
-                      sectionSymbols.map(symbol => renderSymbolItem(symbol, section.id))
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })
+                    </div>
+                  )}
+                  
+                  {section.expanded && (
+                    <div>
+                      {sectionSymbols.length === 0 ? (
+                        <div className="p-2 text-center text-gray-500 text-xs">
+                          No symbols in this section
+                        </div>
+                      ) : (
+                        sectionSymbols.map(symbol => renderSymbolItem(symbol, section.id))
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </>
         )}
       </div>
 

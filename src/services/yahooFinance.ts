@@ -255,7 +255,7 @@ function aggregateCandles(candles: Candle[], factor: number): Candle[] {
 export async function fetchSymbolData(symbol: string): Promise<Symbol | null> {
   try {
     const formattedSymbol = formatSymbolForYahoo(symbol);
-    const url = `${CORS_PROXY}${encodeURIComponent(`${YAHOO_FINANCE_BASE}/${formattedSymbol}?interval=1d&range=2d`)}`;
+    const url = `${CORS_PROXY}${encodeURIComponent(`${YAHOO_FINANCE_BASE}/${formattedSymbol}?interval=1d&range=5d`)}`;
     
     const response = await axios.get<YahooQuoteResponse>(url);
     const result = response.data.chart.result[0];
@@ -265,8 +265,10 @@ export async function fetchSymbolData(symbol: string): Promise<Symbol | null> {
     const meta = result.meta;
     const currentPrice = meta.regularMarketPrice;
     const previousClose = meta.previousClose;
+    
+    // Calculate proper day change and percentage
     const change = currentPrice - previousClose;
-    const changePercent = (change / previousClose) * 100;
+    const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0;
     
     return {
       symbol: symbol.toUpperCase(),
