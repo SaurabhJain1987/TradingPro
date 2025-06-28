@@ -343,8 +343,8 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
   };
 
   const renderSymbolItem = (symbol: Symbol, sectionId: string) => {
-    // Fix: Use the actual changePercent value instead of checking isNaN
-    const changePercent = symbol.changePercent || 0;
+    // Fixed: Ensure we're using the actual changePercent value from the API
+    const changePercent = symbol.changePercent;
     const isFlashing = flashingSymbols.has(symbol.symbol);
     
     return (

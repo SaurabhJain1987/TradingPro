@@ -17,6 +17,8 @@ interface YahooQuoteResponse {
         previousClose: number;
         currency: string;
         exchangeName: string;
+        regularMarketChange?: number;
+        regularMarketChangePercent?: number;
       };
       timestamp: number[];
       indicators: {
@@ -266,9 +268,19 @@ export async function fetchSymbolData(symbol: string): Promise<Symbol | null> {
     const currentPrice = meta.regularMarketPrice;
     const previousClose = meta.previousClose;
     
-    // Calculate proper day change and percentage
-    const change = currentPrice - previousClose;
-    const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0;
+    // Use Yahoo Finance's calculated change values if available, otherwise calculate manually
+    let change: number;
+    let changePercent: number;
+    
+    if (meta.regularMarketChange !== undefined && meta.regularMarketChangePercent !== undefined) {
+      // Use Yahoo Finance's pre-calculated values (more accurate)
+      change = meta.regularMarketChange;
+      changePercent = meta.regularMarketChangePercent;
+    } else {
+      // Fallback to manual calculation
+      change = currentPrice - previousClose;
+      changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0;
+    }
     
     return {
       symbol: symbol.toUpperCase(),
