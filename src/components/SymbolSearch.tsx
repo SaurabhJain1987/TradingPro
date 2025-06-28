@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, Globe, MapPin, Bitcoin, Coins, BarChart3 } from 'lucide-react';
-import { searchSymbols, POPULAR_SYMBOLS } from '../services/yahooFinance';
+import { searchSymbols, POPULAR_SYMBOLS } from '../services/alphaVantage';
 import { Symbol } from '../types/trading';
 
 interface SymbolSearchProps {
@@ -93,7 +93,7 @@ export function SymbolSearch({ onSymbolSelect, onClose }: SymbolSearchProps) {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder="Search symbols (e.g., AAPL, RELIANCE.NS, BTC-USD)..."
+                  placeholder="Search symbols (e.g., AAPL, GOOGL, MSFT)..."
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
@@ -114,8 +114,8 @@ export function SymbolSearch({ onSymbolSelect, onClose }: SymbolSearchProps) {
                       Try searching for:
                       <div className="mt-2">
                         <div>• US stocks: AAPL, GOOGL, MSFT</div>
-                        <div>• Indian stocks: RELIANCE.NS, TCS.NS</div>
-                        <div>• Crypto: BTC-USD, ETH-USD</div>
+                        <div>• Indian stocks: RELIANCE, TCS</div>
+                        <div>• Crypto: BTC, ETH</div>
                       </div>
                     </div>
                   </div>
@@ -172,7 +172,7 @@ export function SymbolSearch({ onSymbolSelect, onClose }: SymbolSearchProps) {
                         onClick={() => handleSymbolClick(symbol)}
                         className="p-3 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors font-medium"
                       >
-                        {symbol.replace('.NS', '')}
+                        {symbol}
                       </button>
                     ))}
                   </div>
@@ -190,7 +190,7 @@ export function SymbolSearch({ onSymbolSelect, onClose }: SymbolSearchProps) {
                         onClick={() => handleSymbolClick(symbol)}
                         className="p-3 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition-colors font-medium"
                       >
-                        {symbol.replace('-USD', '')}
+                        {symbol}
                       </button>
                     ))}
                   </div>
@@ -208,7 +208,7 @@ export function SymbolSearch({ onSymbolSelect, onClose }: SymbolSearchProps) {
                         onClick={() => handleSymbolClick(symbol)}
                         className="p-3 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors font-medium"
                       >
-                        {symbol.replace('=F', '')}
+                        {symbol}
                       </button>
                     ))}
                   </div>
@@ -226,7 +226,7 @@ export function SymbolSearch({ onSymbolSelect, onClose }: SymbolSearchProps) {
                         onClick={() => handleSymbolClick(symbol)}
                         className="p-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors font-medium"
                       >
-                        {symbol.replace('^', '')}
+                        {symbol}
                       </button>
                     ))}
                   </div>

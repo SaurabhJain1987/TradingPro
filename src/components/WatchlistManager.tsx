@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, TrendingUp, TrendingDown, X, Globe, MapPin, Edit2, Trash2, FolderPlus, Save, MoreVertical, ChevronDown, ChevronRight, Star, StarOff, Folder, Bitcoin, BarChart3, Coins } from 'lucide-react';
 import { Symbol, Watchlist, WatchlistData, WatchlistSection } from '../types/trading';
-import { fetchSymbolData, searchSymbols, POPULAR_SYMBOLS } from '../services/yahooFinance';
+import { fetchSymbolData, searchSymbols, POPULAR_SYMBOLS } from '../services/alphaVantage';
 
 interface WatchlistManagerProps {
   selectedSymbol: string;
@@ -57,7 +57,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
           {
             id: 'indian-stocks',
             name: 'Indian Stocks',
-            symbols: ['RELIANCE.NS', 'TCS.NS'],
+            symbols: ['RELIANCE', 'TCS'],
             expanded: true,
             createdAt: Date.now()
           }
@@ -69,7 +69,6 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
       onWatchlistsUpdate([defaultWatchlist]);
       setActiveWatchlistId('default');
     } else if (!activeWatchlistId && watchlists.length > 0) {
-      // Load saved active watchlist or default to first one
       const savedActiveId = localStorage.getItem('activeWatchlistId');
       const validWatchlist = watchlists.find(w => w.id === savedActiveId);
       setActiveWatchlistId(validWatchlist ? savedActiveId! : watchlists[0].id);
@@ -109,7 +108,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
       
       if (newFlashingSymbols.size > 0) {
         setFlashingSymbols(newFlashingSymbols);
-        setTimeout(() => setFlashingSymbols(new Set()), 2000); // Slower flash duration - 2 seconds
+        setTimeout(() => setFlashingSymbols(new Set()), 2000);
       }
       
       setWatchlistsData(results);
@@ -373,7 +372,6 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
   };
 
   const renderSymbolItem = (symbol: Symbol, sectionId: string) => {
-    // Fixed: Ensure we're using the actual changePercent value from the API
     const changePercent = symbol.changePercent;
     const isFlashing = flashingSymbols.has(symbol.symbol);
     
@@ -397,7 +395,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
               <span className="font-bold text-xs text-gray-900">{formatPrice(symbol.price)}</span>
             </div>
             
-            {/* Change % - Fixed to show actual value */}
+            {/* Change % */}
             <div className="flex-shrink-0 text-right w-16">
               <span className={`text-xs font-medium ${
                 changePercent >= 0 ? 'text-green-600' : 'text-red-600'
@@ -524,7 +522,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
           </div>
         )}
 
-        {/* Watchlist Menu - Fixed z-index */}
+        {/* Watchlist Menu */}
         {showWatchlistMenu === activeWatchlist?.id && (
           <div className="absolute top-20 right-4 bg-white border-2 border-gray-300 rounded-lg shadow-lg z-50 min-w-32">
             <button
@@ -655,7 +653,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
                         addingSymbol === symbol ? 'opacity-50 cursor-not-allowed' : ''
                       }`}
                     >
-                      {addingSymbol === symbol ? '...' : symbol.replace('.NS', '')}
+                      {addingSymbol === symbol ? '...' : symbol}
                     </button>
                   ))}
                 </div>
@@ -675,7 +673,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
                         addingSymbol === symbol ? 'opacity-50 cursor-not-allowed' : ''
                       }`}
                     >
-                      {addingSymbol === symbol ? '...' : symbol.replace('-USD', '')}
+                      {addingSymbol === symbol ? '...' : symbol}
                     </button>
                   ))}
                 </div>
@@ -695,7 +693,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
                         addingSymbol === symbol ? 'opacity-50 cursor-not-allowed' : ''
                       }`}
                     >
-                      {addingSymbol === symbol ? '...' : symbol.replace('=F', '')}
+                      {addingSymbol === symbol ? '...' : symbol}
                     </button>
                   ))}
                 </div>
@@ -715,7 +713,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
                         addingSymbol === symbol ? 'opacity-50 cursor-not-allowed' : ''
                       }`}
                     >
-                      {addingSymbol === symbol ? '...' : symbol.replace('^', '')}
+                      {addingSymbol === symbol ? '...' : symbol}
                     </button>
                   ))}
                 </div>
@@ -724,7 +722,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
           </div>
         )}
 
-        {/* Compact Search - Fixed z-index */}
+        {/* Compact Search */}
         {showSearch && (
           <div className="mt-2 relative">
             <div className="relative">
@@ -787,8 +785,8 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
                     Try searching for:
                     <div className="mt-1">
                       <div>• US stocks: AAPL, GOOGL, MSFT</div>
-                      <div>• Indian stocks: RELIANCE.NS, TCS.NS</div>
-                      <div>• Crypto: BTC-USD, ETH-USD</div>
+                      <div>• Indian stocks: RELIANCE, TCS</div>
+                      <div>• Crypto: BTC, ETH</div>
                     </div>
                   </div>
                 </div>
@@ -911,7 +909,7 @@ export function WatchlistManager({ selectedSymbol, onSymbolSelect, watchlists, o
 
       <div className="p-2 border-t-2 border-gray-300 bg-gray-50">
         <div className="text-xs text-gray-600 text-center">
-          Auto-refresh: 1min
+          Auto-refresh: 1min • Alpha Vantage API
         </div>
       </div>
     </div>
