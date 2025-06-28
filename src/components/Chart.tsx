@@ -160,7 +160,7 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
     });
   }, [extendedCandles]);
 
-  // Calculate visible candles based on zoom and pan with enhanced spacing for maximum visibility
+  // Calculate visible candles based on zoom and pan with enhanced spacing logic
   const calculateVisibleCandles = () => {
     const canvas = candleChartRef.current;
     if (!canvas) return { displayCandles: [], startIndex: 0, endIndex: 0 };
@@ -170,21 +170,21 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
     const marginRight = 20;
     const chartWidth = rect.width - marginLeft - marginRight;
     
-    // Ultra-aggressive spacing calculation prioritizing clear separation
-    const minCandleWidth = 1; // Minimum candle body width for visibility
-    const minGapWidth = 3; // Significantly increased minimum gap for clear separation
-    const preferredGapWidth = 6; // Much larger preferred gap for excellent visibility
-    const minTotalWidth = minCandleWidth + preferredGapWidth; // Minimum space per candle including generous gap
+    // Enhanced spacing calculation with stricter separation requirements
+    const minCandleWidth = 2; // Minimum candle body width
+    const minGapWidth = 2; // Increased minimum gap between candles
+    const preferredGapWidth = 3; // Preferred gap for better visual separation
+    const minTotalWidth = minCandleWidth + preferredGapWidth; // Minimum space per candle including gap
     
-    // Calculate maximum candles that can fit with generous spacing
+    // Calculate maximum candles that can fit with proper spacing
     const maxCandlesForWidth = Math.floor(chartWidth / minTotalWidth);
     
-    // Calculate zoom-based max candles with spacing-focused scaling
-    const baseMaxCandles = 80; // Reduced base number to ensure better default spacing
-    const zoomBasedMaxCandles = Math.floor(baseMaxCandles / Math.pow(zoomLevel, 1.1)); // More aggressive zoom scaling for better spacing control
+    // Calculate zoom-based max candles with more aggressive scaling for better separation
+    const baseMaxCandles = 120; // Reduced base number for better default spacing
+    const zoomBasedMaxCandles = Math.floor(baseMaxCandles / Math.pow(zoomLevel, 0.9)); // More aggressive zoom scaling
     
-    // Use the more restrictive limit to ensure excellent spacing
-    const maxCandles = Math.min(maxCandlesForWidth, zoomBasedMaxCandles, 500); // Reasonable max limit with focus on spacing
+    // Use the more restrictive limit to ensure proper spacing
+    const maxCandles = Math.min(maxCandlesForWidth, zoomBasedMaxCandles, 800); // Reduced max limit
     
     // Position current time around 70% from the left (showing more historical data)
     const currentTimeIndex = extendedCandles.length - 200 - 1; // Last real data point
@@ -245,7 +245,7 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
     };
   };
 
-  // Enhanced event handlers with touch support and extended zoom range
+  // Enhanced event handlers with touch support
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -255,9 +255,9 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
       const isTrackpadScroll = Math.abs(e.deltaY) < 50 && Math.abs(e.deltaX) > 0;
       
       if (isTrackpadPinch) {
-        // Handle trackpad pinch-to-zoom with extended range
-        const delta = e.deltaY > 0 ? 0.9 : 1.1; // More aggressive zoom steps
-        setZoomLevel(prev => Math.max(0.1, Math.min(15, prev * delta))); // Extended zoom range
+        // Handle trackpad pinch-to-zoom
+        const delta = e.deltaY > 0 ? 0.95 : 1.05;
+        setZoomLevel(prev => Math.max(0.1, Math.min(10, prev * delta)));
       } else if (isTrackpadScroll && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
         // Handle trackpad horizontal scroll for panning
         const panSensitivity = 0.5;
@@ -271,9 +271,9 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
           return Math.max(-maxOffset, Math.min(maxOffset, newOffset));
         });
       } else {
-        // Handle regular mouse wheel zoom with extended range
-        const delta = e.deltaY > 0 ? 0.92 : 1.08; // More aggressive zoom steps
-        setZoomLevel(prev => Math.max(0.1, Math.min(15, prev * delta))); // Extended zoom range
+        // Handle regular mouse wheel zoom
+        const delta = e.deltaY > 0 ? 0.975 : 1.025;
+        setZoomLevel(prev => Math.max(0.1, Math.min(10, prev * delta)));
       }
     };
 
@@ -310,9 +310,9 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
         const currentDistance = getTouchDistance(touches[0], touches[1]);
         const currentCenter = getTouchCenter(touches[0], touches[1]);
         
-        // Calculate zoom based on distance change with extended range
+        // Calculate zoom based on distance change
         const distanceRatio = currentDistance / touchState.initialDistance;
-        const newZoomLevel = Math.max(0.1, Math.min(15, touchState.initialZoomLevel * distanceRatio)); // Extended zoom range
+        const newZoomLevel = Math.max(0.1, Math.min(10, touchState.initialZoomLevel * distanceRatio));
         
         // Calculate pan based on horizontal movement of center point
         const panDelta = (currentCenter.x - touchState.lastPanX) * 0.5;
@@ -749,43 +749,43 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
       ctx.fillText(timeLabel, x, marginTop + chartHeight + 8);
     }
     
-    // Enhanced candle dimensions calculation with maximum spacing priority
+    // Enhanced candle dimensions calculation with guaranteed separation
     const totalCandleSpace = chartWidth / displayCandles.length;
     
-    // Spacing-first approach - prioritize gaps over candle width
-    const minCandleWidth = 1; // Minimum candle body width for visibility
-    const maxCandleWidth = 20; // Maximum candle width
-    const minGapWidth = 4; // Significantly increased minimum gap for excellent separation
-    const preferredGapWidth = 8; // Much larger preferred gap for maximum visibility
-    const maxGapWidth = 15; // Maximum gap to prevent excessive spacing
+    // Stricter spacing requirements for better visual separation
+    const minCandleWidth = 1.5; // Slightly larger minimum
+    const maxCandleWidth = 18; // Increased maximum for better visibility when zoomed in
+    const minGapWidth = 2; // Increased minimum gap
+    const preferredGapWidth = 4; // Increased preferred gap
+    const maxGapWidth = 10; // Maximum gap to prevent excessive spacing
     
     let candleWidth: number;
     let gapWidth: number;
     
     if (totalCandleSpace <= minCandleWidth + minGapWidth) {
-      // Ultra-tight spacing - prioritize minimum gap
+      // Very tight spacing - prioritize gap over candle width
       gapWidth = minGapWidth;
-      candleWidth = Math.max(0.5, totalCandleSpace - gapWidth);
+      candleWidth = Math.max(1, totalCandleSpace - gapWidth);
     } else if (totalCandleSpace >= maxCandleWidth + maxGapWidth) {
-      // Plenty of space - use maximum candle width with generous gap
+      // Plenty of space - use maximum candle width with balanced gap
       candleWidth = maxCandleWidth;
       gapWidth = Math.min(maxGapWidth, totalCandleSpace - candleWidth);
     } else {
-      // Calculate proportional sizing with strong preference for gaps
+      // Calculate proportional sizing with preference for gap
       const availableSpace = totalCandleSpace - minGapWidth;
       
-      // Prioritize gaps for better visual separation
-      const candleRatio = 0.4; // Reduced ratio to give much more space to gaps
+      // Use a more conservative ratio to ensure better spacing
+      const candleRatio = 0.65; // Reduced from 0.75 to give more space to gaps
       candleWidth = Math.max(minCandleWidth, Math.min(maxCandleWidth, availableSpace * candleRatio));
       gapWidth = totalCandleSpace - candleWidth;
       
       // Ensure gap meets minimum requirements
       if (gapWidth < minGapWidth) {
         gapWidth = minGapWidth;
-        candleWidth = Math.max(0.5, totalCandleSpace - gapWidth);
+        candleWidth = Math.max(1, totalCandleSpace - gapWidth);
       }
       
-      // Prefer larger gaps for excellent visual separation
+      // Prefer larger gaps for better visual separation
       if (gapWidth < preferredGapWidth && totalCandleSpace > minCandleWidth + preferredGapWidth) {
         gapWidth = Math.min(preferredGapWidth, totalCandleSpace - minCandleWidth);
         candleWidth = totalCandleSpace - gapWidth;
@@ -795,7 +795,7 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
     // Calculate spacing between candle centers
     const candleSpacing = chartWidth / (displayCandles.length - 1);
     
-    // Draw candles (only for real data) with maximum spacing emphasis
+    // Draw candles (only for real data) with guaranteed separation
     displayCandles.forEach((candle, index) => {
       if (candle.close === 0) return; // Skip future blank periods
       
@@ -812,38 +812,36 @@ export function Chart({ symbol, timeframe, candles, rsi, showRSI = true }: Chart
       
       // Draw wick with proportional width
       ctx.strokeStyle = color;
-      ctx.lineWidth = Math.max(0.5, Math.min(2, candleWidth * 0.2));
+      ctx.lineWidth = Math.max(1, Math.min(2, candleWidth * 0.15)); // Wick width scales with candle width
       ctx.lineCap = 'butt';
       ctx.beginPath();
       ctx.moveTo(Math.round(centerX), Math.round(highY));
       ctx.lineTo(Math.round(centerX), Math.round(lowY));
       ctx.stroke();
       
-      // Draw candle body with clear definition
+      // Draw candle body with guaranteed width and sharp edges
       const bodyTop = Math.min(openY, closeY);
       const bodyHeight = Math.max(1, Math.abs(closeY - openY));
       
       // Calculate candle body position ensuring it's centered and has proper width
       const candleLeft = centerX - (candleWidth / 2);
       
-      // Use precise positioning for clear candle definition
+      // Use integer pixel positions for sharp edges
       const sharpX = Math.round(candleLeft);
       const sharpY = Math.round(bodyTop);
-      const sharpWidth = Math.max(1, Math.round(candleWidth));
+      const sharpWidth = Math.round(candleWidth);
       const sharpHeight = Math.round(bodyHeight);
       
       // Fill candle body
       ctx.fillStyle = color;
       ctx.fillRect(sharpX, sharpY, sharpWidth, sharpHeight);
       
-      // Add border for better definition when candle is wide enough
-      if (candleWidth > 2) {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1;
-        ctx.lineCap = 'butt';
-        ctx.lineJoin = 'miter';
-        ctx.strokeRect(sharpX, sharpY, sharpWidth, sharpHeight);
-      }
+      // Add sharp border for better definition
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.lineCap = 'butt';
+      ctx.lineJoin = 'miter';
+      ctx.strokeRect(sharpX, sharpY, sharpWidth, sharpHeight);
     });
     
     // Draw chart border
