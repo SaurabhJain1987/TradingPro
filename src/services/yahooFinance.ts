@@ -335,76 +335,48 @@ export async function searchSymbols(query: string): Promise<Symbol[]> {
 
 // Improved RSI calculation using Wilder's smoothing method
 function calculateRSI(prices: number[], period: number = 14): number[] {
-  const rsi: number[] = [];
-  const gains: number[] = [];
-  const losses: number[] = [];
+  if (prices.length < period + 1) {
+    return prices.map(() => 50); // Return neutral RSI for insufficient data
+  }
+
+  const rsi: number[] = new Array(prices.length).fill(50);
+  const gains: number[] = new Array(prices.length).fill(0);
+  const losses: number[] = new Array(prices.length).fill(0);
   
   // Step 1: Calculate gains and losses
-  for (let i = 0; i < prices.length; i++) {
-    if (i === 0) {
-      gains.push(0);
-      losses.push(0);
-      rsi.push(50);
-      continue;
-    }
-    
+  for (let i = 1; i < prices.length; i++) {
     const change = prices[i] - prices[i - 1];
-    gains.push(Math.max(0, change));
-    losses.push(Math.max(0, -change));
-    
-    if (i < period) {
-      rsi.push(50);
-      continue;
-    }
-    
-    let avgGain: number;
-    let avgLoss: number;
-    
+    gains[i] = Math.max(0, change);
+    losses[i] = Math.max(0, -change);
+  }
+  
+  // Calculate RSI starting from the period index
+  let avgGain = 0;
+  let avgLoss = 0;
+  
+  for (let i = period; i < prices.length; i++) {
     if (i === period) {
-      // First calculation: simple average of first 14 periods
+      // First calculation: simple average of first 'period' periods
       avgGain = gains.slice(1, period + 1).reduce((sum, gain) => sum + gain, 0) / period;
       avgLoss = losses.slice(1, period + 1).reduce((sum, loss) => sum + loss, 0) / period;
     } else {
       // Subsequent calculations: Wilder's smoothing method
-      const prevAvgGain = calculatePreviousAverage(gains, losses, i - 1, period).avgGain;
-      const prevAvgLoss = calculatePreviousAverage(gains, losses, i - 1, period).avgLoss;
-      
-      avgGain = ((prevAvgGain * (period - 1)) + gains[i]) / period;
-      avgLoss = ((prevAvgLoss * (period - 1)) + losses[i]) / period;
+      avgGain = ((avgGain * (period - 1)) + gains[i]) / period;
+      avgLoss = ((avgLoss * (period - 1)) + losses[i]) / period;
     }
     
     // Calculate RS and RSI
     if (avgLoss === 0) {
-      rsi.push(100);
+      rsi[i] = 100;
     } else {
       const rs = avgGain / avgLoss;
-      const rsiValue = 100 - (100 / (1 + rs));
-      rsi.push(rsiValue);
+      rsi[i] = 100 - (100 / (1 + rs));
     }
   }
   
   return rsi;
 }
 
-// Helper function to calculate previous average for Wilder's method
-function calculatePreviousAverage(gains: number[], losses: number[], index: number, period: number): { avgGain: number; avgLoss: number } {
-  if (index < period) {
-    return { avgGain: 0, avgLoss: 0 };
-  }
-  
-  if (index === period) {
-    const avgGain = gains.slice(1, period + 1).reduce((sum, gain) => sum + gain, 0) / period;
-    const avgLoss = losses.slice(1, period + 1).reduce((sum, loss) => sum + loss, 0) / period;
-    return { avgGain, avgLoss };
-  }
-  
-  // Recursive calculation for Wilder's method
-  const prev = calculatePreviousAverage(gains, losses, index - 1, period);
-  const avgGain = ((prev.avgGain * (period - 1)) + gains[index]) / period;
-  const avgLoss = ((prev.avgLoss * (period - 1)) + losses[index]) / period;
-  
-  return { avgGain, avgLoss };
-}
 
 // Calculate RSI Simple Moving Average (14-period)
 function calculateRSISMA(rsiValues: number[], period: number = 14): number[] {
@@ -459,7 +431,20 @@ function calculateRSIData(candles: Candle[]): RSIData[] {
   // Calculate Bollinger Bands on RSI
   const rsiBB = calculateBollingerBands(rsiValues, 20, 2);
   
-  return candles.map((candle, index) => ({
+  // Ensure RSI data array matches exactly with candles array
+  const rsiData: RSIData[] = [];
+  
+  for (let i = 0; i < candles.length; i++) {
+    rsiData.push({
+      timestamp: candles[i].timestamp,
+      value: rsiValues[i] || 50, // Default RSI value if calculation fails
+      ma: rsiSMA[i] || rsiValues[i] || 50,
+      upperBB: rsiBB.upper[i] || (rsiValues[i] || 50) + 10,
+      lowerBB: rsiBB.lower[i] || (rsiValues[i] || 50) - 10
+    });
+  }
+  
+  return rsiData;
     timestamp: candle.timestamp,
     value: rsiValues[index],
     ma: rsiSMA[index],
