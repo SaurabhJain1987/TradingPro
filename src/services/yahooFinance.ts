@@ -335,48 +335,76 @@ export async function searchSymbols(query: string): Promise<Symbol[]> {
 
 // Improved RSI calculation using Wilder's smoothing method
 function calculateRSI(prices: number[], period: number = 14): number[] {
-  if (prices.length < period + 1) {
-    return prices.map(() => 50); // Return neutral RSI for insufficient data
-  }
-
-  const rsi: number[] = new Array(prices.length).fill(50);
-  const gains: number[] = new Array(prices.length).fill(0);
-  const losses: number[] = new Array(prices.length).fill(0);
+  const rsi: number[] = [];
+  const gains: number[] = [];
+  const losses: number[] = [];
   
   // Step 1: Calculate gains and losses
-  for (let i = 1; i < prices.length; i++) {
+  for (let i = 0; i < prices.length; i++) {
+    if (i === 0) {
+      gains.push(0);
+      losses.push(0);
+      rsi.push(50);
+      continue;
+    }
+    
     const change = prices[i] - prices[i - 1];
-    gains[i] = Math.max(0, change);
-    losses[i] = Math.max(0, -change);
-  }
-  
-  // Calculate RSI starting from the period index
-  let avgGain = 0;
-  let avgLoss = 0;
-  
-  for (let i = period; i < prices.length; i++) {
+    gains.push(Math.max(0, change));
+    losses.push(Math.max(0, -change));
+    
+    if (i < period) {
+      rsi.push(50);
+      continue;
+    }
+    
+    let avgGain: number;
+    let avgLoss: number;
+    
     if (i === period) {
-      // First calculation: simple average of first 'period' periods
+      // First calculation: simple average of first 14 periods
       avgGain = gains.slice(1, period + 1).reduce((sum, gain) => sum + gain, 0) / period;
       avgLoss = losses.slice(1, period + 1).reduce((sum, loss) => sum + loss, 0) / period;
     } else {
       // Subsequent calculations: Wilder's smoothing method
-      avgGain = ((avgGain * (period - 1)) + gains[i]) / period;
-      avgLoss = ((avgLoss * (period - 1)) + losses[i]) / period;
+      const prevAvgGain = calculatePreviousAverage(gains, losses, i - 1, period).avgGain;
+      const prevAvgLoss = calculatePreviousAverage(gains, losses, i - 1, period).avgLoss;
+      
+      avgGain = ((prevAvgGain * (period - 1)) + gains[i]) / period;
+      avgLoss = ((prevAvgLoss * (period - 1)) + losses[i]) / period;
     }
     
     // Calculate RS and RSI
     if (avgLoss === 0) {
-      rsi[i] = 100;
+      rsi.push(100);
     } else {
       const rs = avgGain / avgLoss;
-      rsi[i] = 100 - (100 / (1 + rs));
+      const rsiValue = 100 - (100 / (1 + rs));
+      rsi.push(rsiValue);
     }
   }
   
   return rsi;
 }
 
+// Helper function to calculate previous average for Wilder's method
+function calculatePreviousAverage(gains: number[], losses: number[], index: number, period: number): { avgGain: number; avgLoss: number } {
+  if (index < period) {
+    return { avgGain: 0, avgLoss: 0 };
+  }
+  
+  if (index === period) {
+    const avgGain = gains.slice(1, period + 1).reduce((sum, gain) => sum + gain, 0) / period;
+    const avgLoss = losses.slice(1, period + 1).reduce((sum, loss) => sum + loss, 0) / period;
+    return { avgGain, avgLoss };
+  }
+  
+  // Recursive calculation for Wilder's method
+  const prev = calculatePreviousAverage(gains, losses, index - 1, period);
+  const avgGain = ((prev.avgGain * (period - 1)) + gains[index]) / period;
+  const avgLoss = ((prev.avgLoss * (period - 1)) + losses[index]) / period;
+  
+  return { avgGain, avgLoss };
+}
 
 // Calculate RSI Simple Moving Average (14-period)
 function calculateRSISMA(rsiValues: number[], period: number = 14): number[] {
@@ -445,12 +473,6 @@ function calculateRSIData(candles: Candle[]): RSIData[] {
   }
   
   return rsiData;
-    timestamp: candle.timestamp,
-    value: rsiValues[index],
-    ma: rsiSMA[index],
-    upperBB: rsiBB.upper[index],
-    lowerBB: rsiBB.lower[index]
-  }));
 }
 
 // Popular symbols for quick access
